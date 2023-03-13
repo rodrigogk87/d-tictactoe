@@ -12,7 +12,7 @@ export function TicTacToe(): ReactElement {
     const [signer, setSigner] = useState<Signer>();
     const [contract, setContract] = useState<Contract>();
 
-    const [gameId, setGameId] = useState<number>(0);
+    const [gameId, setGameId] = useState<number>(2);
     const [gameStarted, setGameStarted] = useState<boolean>(false);
     const [players, setPlayers] = useState<string[]>([]);
     const [currentPlayer, setCurrentPlayer] = useState<string>('');
@@ -23,6 +23,7 @@ export function TicTacToe(): ReactElement {
     ]);
     const [winner, setWinner] = useState<string>('');
     const [tie, setTie] = useState<boolean>(false);
+    const [prize, setPrize] = useState<string>('0');
 
     useEffect((): void => {
         if (!library) {
@@ -36,7 +37,7 @@ export function TicTacToe(): ReactElement {
     useEffect((): void => {
         if (signer) {
             const contract = new ethers.Contract(
-                "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+                "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
                 TicTacToeContract.abi,
                 signer
             );
@@ -57,20 +58,24 @@ export function TicTacToe(): ReactElement {
             row.map((cell: string | null) => (cell === null ? '' : cell))
         );
         setBoard(gameBoard);
-
+        setPrize(ethers.utils.formatEther(gameInfo.prize));
+        setCurrentPlayer(gameInfo.currentPlayer);
         console.log(gameBoard);
     }
 
     // create a new game
     const handleCreateGame = async (contract: Contract) => {
-        await contract.createGame();
+        let tx = await contract.createGame();
+        await tx.wait();
         setGameId((prevId: number) => prevId + 1);
     };
 
     // join an existing game
     const handleJoinGame = async (contract: Contract) => {
         try {
-            await contract.joinGame(gameId);
+            const value = ethers.utils.parseEther('5');
+            let tx = await contract.joinGame(gameId, { value });
+            await tx.wait();
             await getGameData(contract);
         } catch (error) {
             console.log(error);
@@ -80,7 +85,8 @@ export function TicTacToe(): ReactElement {
     // start the game
     const handleStartGame = async (contract: Contract) => {
         try {
-            await contract.startGame(gameId);
+            let tx = await contract.startGame(gameId);
+            await tx.wait();
             await getGameData(contract);
         } catch (error) {
             console.log(error);
@@ -109,6 +115,7 @@ export function TicTacToe(): ReactElement {
                         <div className="game-info">
                             <h2>Game Information</h2>
                             <p>Game ID: {gameId}</p>
+                            <p>Prize: {prize}</p>
                             {gameStarted ? (
                                 <>
                                     <p>Players: {players.join(', ')}</p>

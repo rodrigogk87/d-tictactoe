@@ -8,10 +8,12 @@ contract TicTacToe {
         bool isStarted;
         address winner;
         bool tie;
+        uint256 prize;
     }
 
     mapping(uint => Game) public games;
     uint public gameCount;
+    uint256 constant MIN_ETH_TO_JOIN = 5 ether;
 
     constructor() {
         gameCount = 0;
@@ -28,7 +30,8 @@ contract TicTacToe {
             address[][] memory board,
             bool isStarted,
             address winner,
-            bool tie
+            bool tie,
+            uint256 prize
         )
     {
         Game storage game = games[_gameId];
@@ -47,16 +50,19 @@ contract TicTacToe {
         isStarted = game.isStarted;
         winner = game.winner;
         tie = game.tie;
+        prize = game.prize;
     }
 
     function createGame() public {
         gameCount++;
     }
 
-    function joinGame(uint _gameId) public {
+    function joinGame(uint _gameId) public payable {
+        require(msg.value >= MIN_ETH_TO_JOIN, "should pay minimum to join");
         require(games[_gameId].players.length < 2, "Game is already full.");
         require(games[_gameId].isStarted == false, "Game has already started.");
         games[_gameId].players.push(msg.sender);
+        games[_gameId].prize += msg.value;
     }
 
     function startGame(uint _gameId) public {
@@ -80,11 +86,18 @@ contract TicTacToe {
         game.board[_row][_col] = msg.sender;
         if (checkWin(game.board, msg.sender)) {
             // winner
+            uint256 prize = games[_gameId].prize;
             games[_gameId].isStarted = false;
             games[_gameId].winner = msg.sender;
+            games[_gameId].prize = 0;
+            payable(address(msg.sender)).transfer(prize);
         } else if (checkDraw(game.board)) {
+            uint256 prize = games[_gameId].prize;
             games[_gameId].isStarted = false;
             games[_gameId].tie = true;
+            games[_gameId].prize = 0;
+            payable(address(games[_gameId].players[0])).transfer(prize / 2);
+            payable(address(games[_gameId].players[1])).transfer(prize / 2);
         } else {
             game.currentPlayer = getNextPlayer(game.players, msg.sender);
         }

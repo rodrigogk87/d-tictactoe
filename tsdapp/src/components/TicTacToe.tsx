@@ -1,18 +1,14 @@
-import { Contract, ethers, Signer } from 'ethers';
+import { Contract, ethers } from 'ethers';
 import TicTacToeContract from '../artifacts/contracts/TicTacToe.sol/TicTacToe.json';
 import { useEffect, useState, ReactElement } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
-import { useWeb3React } from '@web3-react/core';
-import { Provider } from '../utils/provider';
+import { useContract } from '../hooks/useContract';
 
 export function TicTacToe(): ReactElement {
 
-    const context = useWeb3React<Provider>();
-    const { library, active } = context;
-    const [signer, setSigner] = useState<Signer>();
-    const [contract, setContract] = useState<Contract>();
+    const { contract } = useContract();
 
-    const [gameId, setGameId] = useState<number>(2);
+    const [gameId, setGameId] = useState<number>(3);
     const [gameStarted, setGameStarted] = useState<boolean>(false);
     const [players, setPlayers] = useState<string[]>([]);
     const [currentPlayer, setCurrentPlayer] = useState<string>('');
@@ -24,26 +20,6 @@ export function TicTacToe(): ReactElement {
     const [winner, setWinner] = useState<string>('');
     const [tie, setTie] = useState<boolean>(false);
     const [prize, setPrize] = useState<string>('0');
-
-    useEffect((): void => {
-        if (!library) {
-            setSigner(undefined);
-            return;
-        }
-
-        setSigner(library.getSigner());
-    }, [library]);
-
-    useEffect((): void => {
-        if (signer) {
-            const contract = new ethers.Contract(
-                "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
-                TicTacToeContract.abi,
-                signer
-            );
-            setContract(contract);
-        }
-    }, [signer]);
 
     useEffect(() => {
         if (contract)
